@@ -1,0 +1,27 @@
+---
+title: "Weather Events Consequences For Health And Economy Across USA From 1950 To 2011"
+author: "Luiz Fernando da Silva"
+date: "22/05/2015"
+output: html_document
+---
+
+##Synopsis
+
+This is a simple analysis of weather events in USA and consequences to health of population and economy. 
+The data is collected by NOAA (National Oceanic and Atmospheric Administration) from 1950 to november of 2011 and can be downloaded from [here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2). 
+For a better understanding of data format the documentation can be downloaded [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf).
+
+With this analysis we can observe that the more harmful event is ??? and that the more expensive event is ???.
+
+##Data Processing
+
+###Loading data
+
+###Cleaning data
+
+
+##Results
+
+###Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+###Across the United States, which types of events have the greatest economic consequences?
