@@ -5,23 +5,136 @@ date: "22/05/2015"
 output: html_document
 ---
 
+
+
 ##Synopsis
 
-This is a simple analysis of weather events in USA and consequences to health of population and economy. 
-The data is collected by NOAA (National Oceanic and Atmospheric Administration) from 1950 to november of 2011 and can be downloaded from [here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2). 
-For a better understanding of data format the documentation can be downloaded [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf).
+This is a simple analysis of weather events in USA and 
+consequences to health of population and economy. 
+The data is collected by NOAA (National Oceanic and Atmospheric 
+Administration) from 1950 to november of 2011 and can be downloaded 
+from [here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2). 
+For a better understanding of data format the documentation can be 
+downloaded [here](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf).
 
-With this analysis we can observe that the more harmful event is ??? and that the more expensive event is ???.
+With this analysis we can observe that the more harmful event 
+is **TORNADO** and that the more expensive event is **FLOOD**.
+
+
 
 ##Data Processing
 
-###Loading data
+Assume that the dataset was downloaded and descompressed in the current working directory.
 
-###Cleaning data
+Only some columns is relevant to our analysis:
+
+* _EVTYPE_: The type of event
+* _FATALITIES_: The number of fatalities
+* _INJURIES_: The number of injuries
+* _PROPDMG_: Property Damage Value
+* _PROPDMGEXP_: Exponent of Property Damage Value
+* _CROPDMG_: Crop Damage Value
+* _CROPDMGEXP_: Exponent of Crop Damage Value
+
+We can load the data ignoring the useless columns
+
+```{r cache=TRUE}
+cols <- c('NULL','NULL','NULL','NULL','NULL','NULL','NULL',NA,'NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL',NA,NA,NA,NA,NA,NA,'NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL','NULL')
+data <- read.csv('repdata-data-StormData.csv', colClasses=cols, stringsAsFactors=F)
+```
+
+Now we need to calculate the real Property Damage Value and the real Crop Damage value by yours respective exponents, looking the data we can found this following exponents:
+
+```{r}
+unique(data$PROPDMGEXP)
+unique(data$CROPDMGEXP)
+```
+
+* H or h converts to hundreds (10<sup>2</sup>)
+* K or k converts to thousands (10<sup>3</sup>)
+* M or m converts to millions (10<sup>6</sup>)
+* B or b converts to billions (10<sup>9</sup>)
+* Blank values keeps single values
+* Other numeric converts to respective exponent (10<sup>x</sup>)
+* Other symbols will be ignored
+
+```{r}
+data$PROPDMGEXPN[data$PROPDMGEXP == 'H'] <- 1e+02
+data$PROPDMGEXPN[data$PROPDMGEXP == 'h'] <- 1e+02
+data$PROPDMGEXPN[data$PROPDMGEXP == 'K'] <- 1e+03
+data$PROPDMGEXPN[data$PROPDMGEXP == 'M'] <- 1e+06
+data$PROPDMGEXPN[data$PROPDMGEXP == 'm'] <- 1e+06
+data$PROPDMGEXPN[data$PROPDMGEXP == 'B'] <- 1e+09
+data$PROPDMGEXPN[data$PROPDMGEXP == ''] <- 1e+00
+data$PROPDMGEXPN[data$PROPDMGEXP == '0'] <- 1e+00
+data$PROPDMGEXPN[data$PROPDMGEXP == '1'] <- 1e+01
+data$PROPDMGEXPN[data$PROPDMGEXP == '2'] <- 1e+02
+data$PROPDMGEXPN[data$PROPDMGEXP == '3'] <- 1e+03
+data$PROPDMGEXPN[data$PROPDMGEXP == '4'] <- 1e+04
+data$PROPDMGEXPN[data$PROPDMGEXP == '5'] <- 1e+05
+data$PROPDMGEXPN[data$PROPDMGEXP == '6'] <- 1e+06
+data$PROPDMGEXPN[data$PROPDMGEXP == '7'] <- 1e+07
+data$PROPDMGEXPN[data$PROPDMGEXP == '8'] <- 1e+08
+data$PROPDMGEXPN[data$PROPDMGEXP == '+'] <- 0
+data$PROPDMGEXPN[data$PROPDMGEXP == '?'] <- 0
+data$PROPDMGEXPN[data$PROPDMGEXP == '-'] <- 0
+data$PROPDMGV <- data$PROPDMG * data$PROPDMGEXPN
+
+data$CROPDMGEXPN[data$CROPDMGEXP == 'K'] <- 1e+03
+data$CROPDMGEXPN[data$CROPDMGEXP == 'k'] <- 1e+03
+data$CROPDMGEXPN[data$CROPDMGEXP == 'M'] <- 1e+06
+data$CROPDMGEXPN[data$CROPDMGEXP == 'm'] <- 1e+06
+data$CROPDMGEXPN[data$CROPDMGEXP == 'B'] <- 1e+09
+data$CROPDMGEXPN[data$CROPDMGEXP == ''] <- 1e+00
+data$CROPDMGEXPN[data$CROPDMGEXP == '0'] <- 1e+00
+data$CROPDMGEXPN[data$CROPDMGEXP == '2'] <- 1e+02
+data$CROPDMGEXPN[data$CROPDMGEXP == '?'] <- 0
+data$CROPDMGV <- data$CROPDMG * data$CROPDMGEXPN
+```
+
+Now we can start analysing the data.
 
 
 ##Results
 
-###Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+####Question 1. Across the United States, which types of events are most harmful with respect to population health?
+Look at top 10 most harmful weather events for public health.
 
-###Across the United States, which types of events have the greatest economic consequences?
+```{r cache=TRUE}
+total_fatalities <- aggregate(FATALITIES ~ EVTYPE, data=data, sum)
+total_injuries <- aggregate(INJURIES ~ EVTYPE, data=data, sum)
+total1 <- merge(total_fatalities, total_injuries, by='EVTYPE')
+ranking1 = total1[order(-total1$FATALITIES, -total1$INJURIES),][1:10,]
+
+par(mfrow=c(2,1), cex = 0.6)
+with(ranking1,barplot(FATALITIES, names.arg=EVTYPE, col='Red', las=2, main="Top 10 Most Harmful Events", ylab="Fatalities"))
+with(ranking1,barplot(INJURIES, names.arg=EVTYPE, col='Orange', las=2, ylab="Injuries"))
+```
+
+```{r}
+# Show first 5 items
+ranking1[1:5,]
+```
+
+
+####Question 2. Across the United States, which types of events have the greatest economic consequences?
+Look at top 10 most expensive weather events in billions of dollars.
+
+```{r cache=TRUE}
+total_prop <- aggregate(PROPDMGV ~ EVTYPE, data=data, sum)
+total_prop$PROPDMGV <- total_prop$PROPDMGV / (10^9)
+total_crop <- aggregate(CROPDMGV ~ EVTYPE, data=data, sum)
+total_crop$CROPDMGV <- total_crop$CROPDMGV / (10^9)
+total2 <- merge(total_prop, total_crop, by='EVTYPE')
+ranking2 = total2[order(-total2$PROPDMGV, -total2$CROPDMGV),][1:10,]
+
+par(mfrow=c(2,1), cex = 0.6)
+with(ranking2,barplot(PROPDMGV, names.arg=EVTYPE, col='Gold', las=2, main="Top 10 Most Expensive Events ($ Billions)", ylab="Property Damage"))
+with(ranking2,barplot(CROPDMGV, names.arg=EVTYPE, col='LightGrey', las=2, ylab="Crop Damage"))
+```
+
+
+```{r}
+# Show first 5 items
+ranking2[1:5,]
+```
